@@ -1,0 +1,16 @@
+name = "onami-karate-quiz"
+compatibility_date = "2024-01-01"
+
+[env.production]
+# Collegamento al database D1
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "onami-quiz-db"
+database_id = "bcbd0550-b8ac-4da8-939e-bf5267e844dc" # Sostituisci con l'ID reale del tuo database
+
+# Configurazione Pages
+pages_build_output_dir = "dist"
+
+# Variabili d'ambiente
+[env.production.vars]
+ENVIRONMENT = "production"

@@ -1,626 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, User, Clock, Target, RotateCcw, Star } from 'lucide-react';
-
-const KarateQuiz = () => {
-  const [gameState, setGameState] = useState('welcome'); // welcome, playing, finished
-  const [playerName, setPlayerName] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(0);
-  const [questions, setQuestions] = useState([]);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [showResult, setShowResult] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [streak, setStreak] = useState(0);
-
-  // Database completo dei termini giapponesi di karate
-  const karateTerms = [
-    { term: "Age", meaning: "Sollevare, levare alto" },
-    { term: "Age tsuki", meaning: "Colpo di pugno crescente" },
-    { term: "Age empi uchi", meaning: "Colpo di gomito verso l'alto" },
-    { term: "Age uke", meaning: "Parata crescente" },
-    { term: "Ago", meaning: "Mento" },
-    { term: "Ai", meaning: "Armonia" },
-    { term: "Aikido", meaning: "Via dell'armonia con l'energia universale" },
-    { term: "Arigato", meaning: "Grazie" },
-    { term: "Ashi", meaning: "Piede" },
-    { term: "Ashi barai", meaning: "Spazzata di piede" },
-    { term: "Ashi waza", meaning: "Tecniche di piede" },
-    { term: "Ashibo", meaning: "Tibia" },
-    { term: "Ashikubi", meaning: "Caviglia" },
-    { term: "Atama", meaning: "Testa" },
-    { term: "Ate", meaning: "Percossa" },
-    { term: "Awase", meaning: "Coordinazione, armonizzazione" },
-    { term: "Barai", meaning: "Spazzare, parare spazzando, falciare" },
-    { term: "Bassai", meaning: "Penetrare la fortezza" },
-    { term: "Bo", meaning: "Bastone di legno lungo circa 180 cm" },
-    { term: "Bokken", meaning: "Spada di legno" },
-    { term: "Bu", meaning: "Marziale, guerriero" },
-    { term: "Budo", meaning: "La Via marziale" },
-    { term: "Bunkai", meaning: "Applicazione pratica di un kata" },
-    { term: "Bushi", meaning: "Nobile guerriero" },
-    { term: "Bushido", meaning: "La Via del guerriero" },
-    { term: "Chi", meaning: "Terra" },
-    { term: "Chikai", meaning: "Vicino" },
-    { term: "Chikara", meaning: "Forza" },
-    { term: "Choku tsuki", meaning: "Pugno diritto" },
-    { term: "Chu", meaning: "Medio" },
-    { term: "Chudan", meaning: "Livello medio" },
-    { term: "Chudan geri", meaning: "Calcio a livello medio" },
-    { term: "Chudan tsuki", meaning: "Colpo di pugno medio" },
-    { term: "Dachi", meaning: "Posizione del corpo" },
-    { term: "Dai", meaning: "Grande" },
-    { term: "Dan", meaning: "Livello, grado di cintura nera" },
-    { term: "Deshi", meaning: "Discepolo, studente" },
-    { term: "Do", meaning: "Via, cammino" },
-    { term: "Dojo", meaning: "Luogo dove si cerca la via" },
-    { term: "Empi", meaning: "Gomito" },
-    { term: "Empi uchi", meaning: "Percossa col gomito" },
-    { term: "En", meaning: "Lontano" },
-    { term: "Ensho", meaning: "Tallone" },
-    { term: "Fudo", meaning: "Immobile, immutabile" },
-    { term: "Fudo dachi", meaning: "Posizione consolidata" },
-    { term: "Fumikiri", meaning: "Calcio tagliente" },
-    { term: "Fumikomi", meaning: "Calcio battente" },
-    { term: "Geri", meaning: "Calcio" },
-    { term: "Gi", meaning: "Uniforme" },
-    { term: "Go", meaning: "Cinque, forza" },
-    { term: "Gohon kumite", meaning: "Combattimento su cinque attacchi" },
-    { term: "Goju ryu", meaning: "Stile di Karate creato da Miyagi Chojun" },
-    { term: "Goshin", meaning: "Autodifesa" },
-    { term: "Gyaku", meaning: "Opposto, contrario" },
-    { term: "Gyaku tsuki", meaning: "Colpo di pugno opposto alla gamba avanzata" },
-    { term: "Hachi", meaning: "Otto" },
-    { term: "Hachiji dachi", meaning: "Posizione naturale eretta" },
-    { term: "Hai", meaning: "Sì" },
-    { term: "Haishu", meaning: "Dorso della mano" },
-    { term: "Haisoku", meaning: "Collo del piede" },
-    { term: "Haito", meaning: "Taglio interno della mano" },
-    { term: "Hajime", meaning: "Cominciare, partire" },
-    { term: "Hangetsu", meaning: "Mezza luna" },
-    { term: "Hanmi", meaning: "Posizione semifrontale" },
-    { term: "Hara", meaning: "Ventre, addome" },
-    { term: "Harai", meaning: "Spazzare, parare spazzando" },
-    { term: "Heian", meaning: "Mente pacifica" },
-    { term: "Heiko", meaning: "Parallelo" },
-    { term: "Heiko dachi", meaning: "Posizione a piedi paralleli" },
-    { term: "Hidari", meaning: "Sinistra" },
-    { term: "Hiji", meaning: "Gomito" },
-    { term: "Hiki", meaning: "Tirare" },
-    { term: "Hikite", meaning: "Richiamo della mano" },
-    { term: "Hiraken", meaning: "Pugno con le falangette piegate" },
-    { term: "Hitai", meaning: "Fronte" },
-    { term: "Hiza", meaning: "Ginocchio" },
-    { term: "Hiza geri", meaning: "Colpo di ginocchio" },
-    { term: "Hon", meaning: "Fondamentale" },
-    { term: "Ichi", meaning: "Uno" },
-    { term: "Ikken hissatsu", meaning: "Uccidere con un colpo solo" },
-    { term: "Ippon", meaning: "Uno solo, punto pieno" },
-    { term: "Ippon kumite", meaning: "Combattimento ad un attacco" },
-    { term: "Jiyu kumite", meaning: "Combattimento libero" },
-    { term: "Jo", meaning: "Alto, bastone di legno 120-140 cm" },
-    { term: "Jodan", meaning: "Livello alto" },
-    { term: "Jodan tsuki", meaning: "Colpo di pugno a livello alto" },
-    { term: "Ju", meaning: "Dieci, cedevolezza" },
-    { term: "Judo", meaning: "Via della cedevolezza" },
-    { term: "Juji", meaning: "Incrociare, croce" },
-    { term: "Juji uke", meaning: "Parata a croce" },
-    { term: "Kagi tsuki", meaning: "Pugno a gancio" },
-    { term: "Kakato", meaning: "Tallone" },
-    { term: "Kake", meaning: "Aggancio, gancio" },
-    { term: "Kakuto", meaning: "Polso piegato a testa di gru" },
-    { term: "Kama", meaning: "Piccola falce per tagliare il riso" },
-    { term: "Kamae", meaning: "Guardia" },
-    { term: "Kami", meaning: "Dei" },
-    { term: "Kanku", meaning: "Osservando il cielo" },
-    { term: "Kao", meaning: "Faccia, viso" },
-    { term: "Kara", meaning: "Vuoto" },
-    { term: "Karada", meaning: "Corpo" },
-    { term: "Karate", meaning: "Mano vuota" },
-    { term: "Karate do", meaning: "La via della mano vuota" },
-    { term: "Kata", meaning: "Forma, modello, esercizio di stile" },
-    { term: "Katana", meaning: "Spada lunga dei Samurai" },
-    { term: "Keage", meaning: "Frustato, di slancio" },
-    { term: "Keiko", meaning: "Allenamento" },
-    { term: "Kekomi", meaning: "Penetrante, di spinta" },
-    { term: "Ken", meaning: "Spada, pugno" },
-    { term: "Kendo", meaning: "Via della spada" },
-    { term: "Keri", meaning: "Calcio" },
-    { term: "Ki", meaning: "Energia universale, energia vitale" },
-    { term: "Kiai", meaning: "Unione di energia" },
-    { term: "Kiba dachi", meaning: "Posizione del cavaliere" },
-    { term: "Kihon", meaning: "Fondamentali" },
-    { term: "Kime", meaning: "Massima concentrazione di energia" },
-    { term: "Kiri", meaning: "Fendente, tagliente" },
-    { term: "Kiru", meaning: "Tagliare, fendere" },
-    { term: "Kizami tsuki", meaning: "Pugno frontale improvviso" },
-    { term: "Ko", meaning: "Piccolo, dorso del pugno" },
-    { term: "Kobudo", meaning: "Antiche arti marziali" },
-    { term: "Kobushi", meaning: "Pugno normale" },
-    { term: "Kokoro", meaning: "Cuore, spirito, anima" },
-    { term: "Kokutsu dachi", meaning: "Posizione di guardia arretrata" },
-    { term: "Kosa", meaning: "Croce o incrociare" },
-    { term: "Koshi", meaning: "Anca, fianco" },
-    { term: "Kote", meaning: "Polso" },
-    { term: "Ku", meaning: "Nove, vuoto" },
-    { term: "Kubi", meaning: "Collo" },
-    { term: "Kumite", meaning: "Combattimento" },
-    { term: "Kyu", meaning: "Classe, grado inferiore" },
-    { term: "Kyudo", meaning: "La via dell'arco" },
-    { term: "Ma", meaning: "Distanza giusta di combattimento" },
-    { term: "Mae", meaning: "Frontale, in avanti" },
-    { term: "Mae geri", meaning: "Calcio frontale" },
-    { term: "Makiwara", meaning: "Bersaglio elastico per allenare" },
-    { term: "Mawashi", meaning: "Circolare" },
-    { term: "Mawashi geri", meaning: "Calcio circolare" },
-    { term: "Me", meaning: "Occhio" },
-    { term: "Michi", meaning: "Via, itinerario" },
-    { term: "Migi", meaning: "Destra" },
-    { term: "Mikazuki geri", meaning: "Calcio a luna crescente" },
-    { term: "Mimi", meaning: "Orecchio" },
-    { term: "Mokuso", meaning: "Pensare in silenzio" },
-    { term: "Morote", meaning: "Due mani" },
-    { term: "Mune", meaning: "Torace, petto" },
-    { term: "Mushin", meaning: "Mente senza mente" },
-    { term: "Musubi dachi", meaning: "Posizione a talloni uniti" },
-    { term: "Nagashi", meaning: "Deviare, fluire" },
-    { term: "Naginata", meaning: "Alabarda giapponese" },
-    { term: "Naore", meaning: "Ritornare in Yoi" },
-    { term: "Neko ashi dachi", meaning: "Posizione del gatto" },
-    { term: "Ni", meaning: "Due" },
-    { term: "Nidan", meaning: "Secondo grado" },
-    { term: "Nukite", meaning: "Mano a lancia" },
-    { term: "Nunchaku", meaning: "Arma con due bastoni uniti" },
-    { term: "O", meaning: "Grande" },
-    { term: "Obi", meaning: "Cintura" },
-    { term: "Oi tsuki", meaning: "Pugno che prosegue" },
-    { term: "Okinawa te", meaning: "Mano di Okinawa" },
-    { term: "Osae", meaning: "Pressante" },
-    { term: "Otoshi", meaning: "Spingere verso il basso" },
-    { term: "Rei", meaning: "Saluto" },
-    { term: "Ren", meaning: "Combinare, collegare" },
-    { term: "Renoji dachi", meaning: "Posizione a L" },
-    { term: "Ryu", meaning: "Stile o scuola" },
-    { term: "Sabaki", meaning: "Schivare" },
-    { term: "Sai", meaning: "Stiletto in ferro del Kobudo" },
-    { term: "Samurai", meaning: "Servitore, sinonimo di bushi" },
-    { term: "San", meaning: "Tre" },
-    { term: "Sanchin dachi", meaning: "Posizione a clessidra" },
-    { term: "Sandan", meaning: "Terzo grado" },
-    { term: "Seiken", meaning: "Pugno normale fondamentale" },
-    { term: "Seiza", meaning: "Posizione in ginocchio" },
-    { term: "Sen", meaning: "Iniziativa" },
-    { term: "Sensei", meaning: "Maestro di dojo" },
-    { term: "Shi", meaning: "Quattro, morte" },
-    { term: "Shiho", meaning: "Nelle quattro direzioni" },
-    { term: "Shiko dachi", meaning: "Posizione quadrata, Sumo" },
-    { term: "Shin", meaning: "Spirito, cuore, anima" },
-    { term: "Shisei", meaning: "Posizione" },
-    { term: "Shito ryu", meaning: "Stile creato da Mabuni Kenwa" },
-    { term: "Shizen tai", meaning: "Posizione naturale" },
-    { term: "Sho", meaning: "Piccolo, primo, palmo" },
-    { term: "Shodan", meaning: "Primo grado" },
-    { term: "Shomen", meaning: "Di fronte, davanti" },
-    { term: "Shotokan", meaning: "Scuola di Shoto" },
-    { term: "Shuto", meaning: "Taglio esterno della mano" },
-    { term: "Sokutei", meaning: "Pianta del piede" },
-    { term: "Sokuto", meaning: "Taglio esterno del piede" },
-    { term: "Soto", meaning: "Esterno" },
-    { term: "Soto uke", meaning: "Parata dall'esterno verso l'interno" },
-    { term: "Suigetsu", meaning: "Plesso solare" },
-    { term: "Sukui", meaning: "Cucchiaio" },
-    { term: "Sun dome", meaning: "Fermare prima del contatto" },
-    { term: "Tai", meaning: "Corpo, attendere" },
-    { term: "Tai sabaki", meaning: "Rotazione del corpo" },
-    { term: "Tanden", meaning: "Basso addome" },
-    { term: "Tatami", meaning: "Materassina" },
-    { term: "Tate", meaning: "Verticale" },
-    { term: "Te", meaning: "Mano" },
-    { term: "Teiji dachi", meaning: "Posizione a T" },
-    { term: "Teisho", meaning: "Base del palmo della mano" },
-    { term: "Tekki", meaning: "Montando a cavallo" },
-    { term: "Tekubi", meaning: "Polso" },
-    { term: "Ten", meaning: "Cielo, universo" },
-    { term: "Tettsui", meaning: "Pugno a martello" },
-    { term: "Tobi", meaning: "Saltare" },
-    { term: "Tobi geri", meaning: "Calcio volante" },
-    { term: "Tsugi ashi", meaning: "Marcia successiva" },
-    { term: "Tsuki", meaning: "Attacco diretto di pugno" },
-    { term: "Tsumasaki", meaning: "Punta delle dita del piede" },
-    { term: "Tsuri ashi", meaning: "Scivolamento del corpo" },
-    { term: "Uchi", meaning: "Percossa, interno" },
-    { term: "Uchi uke", meaning: "Parata dall'interno verso l'esterno" },
-    { term: "Ude", meaning: "Avambraccio" },
-    { term: "Uke", meaning: "Parata, bloccaggio" },
-    { term: "Ukemi", meaning: "Caduta" },
-    { term: "Ura", meaning: "Nascosto, rovescio" },
-    { term: "Uraken", meaning: "Dorso della mano" },
-    { term: "Ushiro", meaning: "Indietro" },
-    { term: "Ushiro geri", meaning: "Calcio all'indietro" },
-    { term: "Wado ryu", meaning: "Scuola della via della pace" },
-    { term: "Waza", meaning: "Tecnica" },
-    { term: "Wazari", meaning: "Mezzo punto" },
-    { term: "Yame", meaning: "Arrestarsi, fermarsi" },
-    { term: "Yoi", meaning: "Pronti, attenzione" },
-    { term: "Yoko", meaning: "Laterale" },
-    { term: "Yoko geri", meaning: "Calcio laterale" },
-    { term: "Zazen", meaning: "Meditare in posizione Seiza" },
-    { term: "Zen", meaning: "Corrente contemplativa del buddismo" },
-    { term: "Zenkutsu dachi", meaning: "Posizione frontale" },
-    { term: "Zuki", meaning: "Colpo diretto di pugno" }
-  ];
-
-  // Timer effect
-  useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0 && !showResult) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && !showResult) {
-      handleAnswer(null);
-    }
-  }, [timeLeft, gameState, showResult]);
-
-  // Generate random wrong answers
-  const getWrongAnswers = (correctAnswer, count = 3) => {
-    const wrongAnswers = karateTerms
-      .filter(term => term.meaning !== correctAnswer)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, count)
-      .map(term => term.meaning);
-    return wrongAnswers;
-  };
-
-  // Generate quiz questions
-  const generateQuestions = () => {
-    const shuffledTerms = [...karateTerms].sort(() => Math.random() - 0.5);
-    const quizQuestions = shuffledTerms.slice(0, 15).map(term => {
-      const wrongAnswers = getWrongAnswers(term.meaning);
-      const allAnswers = [term.meaning, ...wrongAnswers].sort(() => Math.random() - 0.5);
-      
-      return {
-        term: term.term,
-        correctAnswer: term.meaning,
-        options: allAnswers
-      };
-    });
-    setQuestions(quizQuestions);
-  };
-
-  const startGame = () => {
-    if (playerName.trim()) {
-      generateQuestions();
-      setGameState('playing');
-      setCurrentQuestion(0);
-      setScore(0);
-      setStreak(0);
-      setTimeLeft(15);
-    }
-  };
-
-  const handleAnswer = (selectedOption) => {
-    setSelectedAnswer(selectedOption);
-    setShowResult(true);
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>O-Nami Karate Quiz</title>
+    <meta name="description" content="Quiz interattivo sui termini giapponesi del karate per O-Nami Karate Firenze. Metti alla prova la tua conoscenza e sfida gli altri membri del dojo!" />
     
-    const isCorrect = selectedOption === questions[currentQuestion].correctAnswer;
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥋</text></svg>" />
     
-    if (isCorrect) {
-      const timeBonus = Math.floor(timeLeft / 3);
-      const streakBonus = streak >= 3 ? streak * 2 : 0;
-      const totalPoints = 10 + timeBonus + streakBonus;
-      setScore(score + totalPoints);
-      setStreak(streak + 1);
-    } else {
-      setStreak(0);
-    }
-
-    setTimeout(() => {
-      if (currentQuestion < 14) {
-        setCurrentQuestion(currentQuestion + 1);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setTimeLeft(15);
-      } else {
-        finishGame();
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Meta tags social -->
+    <meta property="og:title" content="O-Nami Karate Quiz - Termini Giapponesi" />
+    <meta property="og:description" content="Quiz sui termini giapponesi del karate per O-Nami Karate Firenze" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://onami-quiz.pages.dev" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
       }
-    }, 2000);
-  };
-
-  const finishGame = () => {
-    const newLeaderboard = [...leaderboard, { name: playerName, score: score }]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-    setLeaderboard(newLeaderboard);
-    setGameState('finished');
-  };
-
-  const resetGame = () => {
-    setGameState('welcome');
-    setPlayerName('');
-    setCurrentQuestion(0);
-    setScore(0);
-    setStreak(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setTimeLeft(15);
-  };
-
-  if (gameState === 'welcome') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">波</span>
-              </div>
-              <h1 className="text-4xl font-bold text-blue-800">O-Nami Karate Firenze</h1>
-            </div>
-            <h2 className="text-2xl text-blue-700 mb-2">Quiz Termini Giapponesi</h2>
-            <p className="text-blue-600 italic">"Grandi Onde"</p>
-          </div>
-
-          {/* Welcome Card */}
-          <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-            <div className="text-center mb-6">
-              <Target className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Benvenuto al Quiz!</h3>
-              <p className="text-gray-600">
-                Metti alla prova la tua conoscenza dei termini giapponesi del karate
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Il tuo nome:
-                </label>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Inserisci il tuo nome"
-                  maxLength={20}
-                />
-              </div>
-              
-              <button
-                onClick={startGame}
-                disabled={!playerName.trim()}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                Inizia Quiz
-              </button>
-            </div>
-
-            <div className="mt-6 text-center text-sm text-gray-500">
-              <p>📚 15 domande casuali</p>
-              <p>⏱️ 15 secondi per risposta</p>
-              <p>🏆 Punteggi bonus per velocità e serie</p>
-            </div>
-          </div>
-
-          {/* Leaderboard Preview */}
-          {leaderboard.length > 0 && (
-            <div className="max-w-md mx-auto mt-8 bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                Classifica
-              </h3>
-              <div className="space-y-2">
-                {leaderboard.slice(0, 5).map((player, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className="text-gray-700">
-                      {index + 1}. {player.name}
-                    </span>
-                    <span className="font-semibold text-blue-600">{player.score}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (gameState === 'playing') {
-    const currentQ = questions[currentQuestion];
+      
+      /* Animazioni personalizzate */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+      
+      @keyframes wave {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(5deg); }
+        75% { transform: rotate(-5deg); }
+      }
+      
+      .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out forwards;
+      }
+      
+      .animate-pulse-gentle {
+        animation: pulse 2s infinite;
+      }
+      
+      .animate-wave {
+        animation: wave 2s ease-in-out infinite;
+      }
+      
+      /* Gradiente personalizzato O-Nami */
+      .bg-onami-gradient {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+      }
+      
+      .bg-onami-light {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+      }
+      
+      /* Effetti hover personalizzati */
+      .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      
+      .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+      }
+      
+      /* Stile per il carattere giapponese */
+      .japanese-wave {
+        font-family: 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body class="bg-onami-light min-h-screen">
+    <div id="root" class="min-h-screen"></div>
     
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-        <div className="container mx-auto px-4 py-8">
-          {/* Game Header */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5 text-blue-600" />
-                <span className="font-semibold text-gray-800">{playerName}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="font-bold text-gray-800">{score}</span>
-                </div>
-                {streak >= 3 && (
-                  <div className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-sm font-semibold">
-                    🔥 {streak} di fila!
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Domanda {currentQuestion + 1} di 15
-              </span>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-600" />
-                <span className={`font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-gray-700'}`}>
-                  {timeLeft}s
-                </span>
-              </div>
-            </div>
-            
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentQuestion + 1) / 15) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Question Card */}
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-sm text-gray-600 mb-2">Cosa significa questo termine?</h2>
-              <div className="text-4xl font-bold text-blue-800 mb-4 font-mono">
-                {currentQ?.term}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentQ?.options.map((option, index) => {
-                let buttonClass = "w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ";
-                
-                if (showResult) {
-                  if (option === currentQ.correctAnswer) {
-                    buttonClass += "border-green-500 bg-green-50 text-green-800";
-                  } else if (option === selectedAnswer && option !== currentQ.correctAnswer) {
-                    buttonClass += "border-red-500 bg-red-50 text-red-800";
-                  } else {
-                    buttonClass += "border-gray-200 bg-gray-50 text-gray-500";
-                  }
-                } else {
-                  buttonClass += "border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer";
-                }
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => !showResult && handleAnswer(option)}
-                    disabled={showResult}
-                    className={buttonClass}
-                  >
-                    <span className="font-medium">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {showResult && (
-              <div className="mt-6 p-4 rounded-lg text-center">
-                {selectedAnswer === currentQ.correctAnswer ? (
-                  <div className="text-green-700">
-                    <div className="text-2xl mb-2">🎉 Corretto!</div>
-                    {timeLeft > 10 && <p className="text-sm">Bonus velocità: +{Math.floor(timeLeft / 3)} punti</p>}
-                    {streak >= 3 && <p className="text-sm">Bonus serie: +{streak * 2} punti</p>}
-                  </div>
-                ) : (
-                  <div className="text-red-700">
-                    <div className="text-2xl mb-2">❌ Sbagliato!</div>
-                    <p className="text-sm">La risposta corretta era: <strong>{currentQ.correctAnswer}</strong></p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (gameState === 'finished') {
-    const playerRank = leaderboard.findIndex(p => p.name === playerName && p.score === score) + 1;
+    <!-- Vite -->
+    <script type="module" src="/src/main.jsx"></script>
     
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="mb-6">
-              <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Quiz Completato!</h2>
-              <p className="text-xl text-blue-600">Complimenti {playerName}!</p>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-6 mb-6">
-              <div className="text-4xl font-bold text-blue-800 mb-2">{score} punti</div>
-              <div className="text-gray-600">
-                Posizione in classifica: #{playerRank}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-4">I tuoi risultati</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Domande totali:</span>
-                    <span className="font-semibold">15</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Punteggio finale:</span>
-                    <span className="font-semibold text-blue-600">{score}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Media per domanda:</span>
-                    <span className="font-semibold">{Math.round(score / 15)} pt</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  Top 5 Classifica
-                </h3>
-                <div className="space-y-2">
-                  {leaderboard.slice(0, 5).map((player, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex justify-between items-center p-2 rounded ${
-                        player.name === playerName && player.score === score 
-                          ? 'bg-blue-100 border border-blue-300' 
-                          : ''
-                      }`}
-                    >
-                      <span className="font-medium">
-                        {index + 1}. {player.name}
-                      </span>
-                      <span className="font-bold text-blue-600">{player.score}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={resetGame}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <RotateCcw className="w-5 h-5" />
-                Gioca Ancora
-              </button>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-              <p className="text-sm text-gray-600 mb-2">
-                Continua ad allenarti con O-Nami Karate Firenze!
-              </p>
-              <div className="text-xs text-gray-500">
-                <p>📧 onamikaratefirenze@gmail.com</p>
-                <p>📞 +39 371 315 7112</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-};
-
-export default KarateQuiz;
+    <!-- Service Worker per PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
