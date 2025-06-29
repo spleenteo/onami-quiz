@@ -25,11 +25,7 @@ const KarateQuiz = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [globalStats, setGlobalStats] = useState(null);
-  const [personalBestScore, setPersonalBestScore] = useState(() => {
-    const saved = localStorage.getItem('karateQuizPersonalBest');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [showChangeUsername, setShowChangeUsername] = useState(false);
+  const [playerStats, setPlayerStats] = useState(null);
 
   // Database dei termini giapponesi di karate (stesso di prima)
   const karateTerms = [
@@ -281,9 +277,33 @@ const KarateQuiz = () => {
   // Carica la classifica globale all'avvio
   useEffect(() => {
     fetchLeaderboard();
+    if (playerName) {
+      fetchPlayerStats(playerName);
+    }
   }, []);
 
+  // Fetch player stats when name changes
+  useEffect(() => {
+    if (playerName && playerName.trim()) {
+      fetchPlayerStats(playerName);
+    }
+  }, [playerName]);
+
   // API calls
+  const fetchPlayerStats = async (name) => {
+    try {
+      const response = await fetch(`/api/player-stats?name=${encodeURIComponent(name)}`);
+      const data = await response.json();
+      if (data.exists) {
+        setPlayerStats(data.player);
+      } else {
+        setPlayerStats(null);
+      }
+    } catch (error) {
+      console.error('Errore nel recuperare le statistiche del giocatore:', error);
+    }
+  };
+
   const fetchLeaderboard = async () => {
     try {
       const response = await fetch('/api/leaderboard');
@@ -325,17 +345,8 @@ const KarateQuiz = () => {
       if (result.success) {
         setLeaderboard(result.leaderboard || []);
         
-        // Aggiorna il miglior punteggio personale se necessario
-        if (!personalBestScore || score > personalBestScore.score) {
-          const newPersonalBest = {
-            score,
-            correctAnswers,
-            maxStreak,
-            date: new Date().toISOString()
-          };
-          setPersonalBestScore(newPersonalBest);
-          localStorage.setItem('karateQuizPersonalBest', JSON.stringify(newPersonalBest));
-        }
+        // Ricarica le statistiche del giocatore
+        fetchPlayerStats(playerName);
       }
     } catch (error) {
       console.error('Errore nel salvare il punteggio:', error);
@@ -494,49 +505,32 @@ const KarateQuiz = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Il tuo nome:
                 </label>
-                {!showChangeUsername && playerName ? (
-                  <div className="flex items-center justify-between bg-gray-100 px-4 py-3 rounded-lg">
-                    <span className="font-medium text-gray-800">{playerName}</span>
-                    <button
-                      onClick={() => setShowChangeUsername(true)}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Cambia
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={playerName}
-                      onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Inserisci il tuo nome"
-                      maxLength={20}
-                    />
-                    {showChangeUsername && (
-                      <button
-                        onClick={() => {
-                          setShowChangeUsername(false);
-                          localStorage.setItem('karateQuizPlayerName', playerName);
-                        }}
-                        disabled={!playerName.trim()}
-                        className="text-sm text-gray-600 hover:text-gray-800"
-                      >
-                        Annulla
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Inserisci il tuo nome"
+                    maxLength={20}
+                  />
+                  {playerStats && (
+                    <div className="text-xs text-gray-600">
+                      Bentornato! Hai giocato {playerStats.games_played} {playerStats.games_played === 1 ? 'partita' : 'partite'}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              {personalBestScore && (
+              {playerStats && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-700 font-medium">
-                    Il tuo miglior punteggio: <span className="font-bold">{personalBestScore.score}</span>
+                    Il tuo miglior punteggio: <span className="font-bold">{playerStats.score}</span>
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    {personalBestScore.correctAnswers}/15 risposte corrette • Serie max: {personalBestScore.maxStreak}
+                    {playerStats.correct_answers}/{playerStats.questions_answered} risposte corrette totali • 
+                    Serie max: {playerStats.streak_max} • 
+                    Partite giocate: {playerStats.games_played}
                   </p>
                 </div>
               )}
@@ -546,7 +540,7 @@ const KarateQuiz = () => {
                 disabled={!playerName.trim()}
                 className="w-full bg-onami-gradient text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-all transform hover:scale-105 disabled:hover:scale-100"
               >
-                {personalBestScore ? 'Riprova' : 'Inizia Quiz'}
+                {playerStats ? 'Riprova' : 'Inizia Quiz'}
               </button>
             </div>
 
@@ -745,14 +739,14 @@ const KarateQuiz = () => {
                   Posizione in classifica: <span className="font-bold text-blue-600">#{playerRank}</span>
                 </div>
               )}
-              {personalBestScore && personalBestScore.score < score && (
+              {playerStats && playerStats.score < score && (
                 <div className="mt-3 bg-green-100 text-green-700 px-4 py-2 rounded-lg font-semibold animate-pulse-gentle">
-                  🎉 Nuovo record personale! (+{score - personalBestScore.score} punti)
+                  🎉 Nuovo record personale! (+{score - playerStats.score} punti)
                 </div>
               )}
-              {personalBestScore && personalBestScore.score >= score && (
+              {playerStats && playerStats.score >= score && (
                 <div className="mt-3 text-gray-600 text-sm">
-                  Il tuo record personale: {personalBestScore.score} punti
+                  Il tuo record personale: {playerStats.score} punti
                 </div>
               )}
             </div>
