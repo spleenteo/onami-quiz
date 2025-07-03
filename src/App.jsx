@@ -580,7 +580,7 @@ const KarateQuiz = () => {
                 Classifica Globale
               </h3>
               <div className="space-y-3">
-                {leaderboard.slice(0, 5).map((player, index) => (
+                {leaderboard.slice(0, 30).map((player, index) => (
                   <div key={index} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50">
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -783,7 +783,7 @@ const KarateQuiz = () => {
                   Top 5 O-Nami
                 </h3>
                 <div className="space-y-2">
-                  {leaderboard.slice(0, 5).map((player, index) => (
+                  {leaderboard.slice(0, 30).map((player, index) => (
                     <div 
                       key={index} 
                       className={`flex justify-between items-center p-2 rounded-lg ${
