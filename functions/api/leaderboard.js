@@ -22,7 +22,7 @@ export async function onRequestGet(context) {
         created_at
       FROM players 
       ORDER BY score DESC 
-      LIMIT 20
+      LIMIT 100
     `).all();
 
     // Statistiche generali
@@ -46,7 +46,7 @@ export async function onRequestGet(context) {
       FROM game_sessions 
       GROUP BY player_name 
       ORDER BY sessions_played DESC 
-      LIMIT 5
+      LIMIT 30
     `).all();
 
     return new Response(
